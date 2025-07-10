@@ -69,6 +69,29 @@ EOF
     echo "✅ Jupyter configuration restored"
 fi
 
+# Verify R kernel is available
+echo "🔍 Checking R kernel availability..."
+if jupyter kernelspec list 2>/dev/null | grep -q "ir"; then
+    echo "✅ R kernel is available"
+else
+    echo "⚠️ R kernel not found, setting up..."
+    # Run R kernel setup if missing
+    if [ -f "/workspaces/data-management-classroom/scripts/setup_r_kernel.sh" ]; then
+        bash /workspaces/data-management-classroom/scripts/setup_r_kernel.sh
+    else
+        # Inline R kernel setup
+        R -e "
+        user_lib <- '~/R'
+        if (!dir.exists(user_lib)) dir.create(user_lib, recursive = TRUE)
+        .libPaths(c(user_lib, .libPaths()))
+        if (require('IRkernel', quietly = TRUE)) {
+            IRkernel::installspec(user = TRUE)
+            cat('✅ R kernel registered\n')
+        }
+        " 2>/dev/null
+    fi
+fi
+
 echo "✅ Post-start check complete"
 echo "🎓 Environment ready for data science work!"
 echo ""

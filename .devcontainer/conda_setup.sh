@@ -18,6 +18,7 @@ source ~/.bashrc 2>/dev/null || true
 # Install additional packages via conda (safer than pip in conda environments)
 echo "📦 Installing additional conda packages..."
 conda install -c conda-forge -y \
+    postgresql \
     psycopg2 \
     sqlalchemy \
     plotly \
@@ -29,6 +30,7 @@ conda install -c conda-forge -y \
 # Install Python packages via pip that aren't available in conda
 echo "🐍 Installing additional Python packages..."
 pip install --no-cache-dir \
+    psycopg2-binary \
     jupyter-server-config \
     ipython-sql
 
@@ -93,6 +95,69 @@ echo "🛠️ Configuring Git..."
 git config --global init.defaultBranch main
 git config --global user.name "Data Science Student" 2>/dev/null || true
 git config --global user.email "student@example.com" 2>/dev/null || true
+
+# Set up R kernel for Jupyter
+echo "🔧 Setting up R kernel for Jupyter..."
+R -e "
+# Ensure user library exists and is in path
+user_lib <- '~/R'
+if (!dir.exists(user_lib)) {
+    dir.create(user_lib, recursive = TRUE)
+    cat('📂 Created user library directory\n')
+}
+.libPaths(c(user_lib, .libPaths()))
+
+# Check if IRkernel is installed
+if (!require('IRkernel', quietly = TRUE)) {
+    cat('📦 Installing IRkernel and dependencies...\n')
+    
+    # Install essential packages for Jupyter integration
+    essential_packages <- c('IRkernel', 'repr', 'IRdisplay', 'crayon', 'pbdZMQ', 'uuid', 'digest')
+    
+    for (pkg in essential_packages) {
+        if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+            cat('Installing', pkg, '...\n')
+            install.packages(pkg, repos='https://cran.rstudio.com/', lib=user_lib, quiet=TRUE)
+        }
+    }
+    
+    cat('✅ R packages installed\n')
+} else {
+    cat('✅ IRkernel already available\n')
+}
+
+# Register kernel with Jupyter
+library(IRkernel, lib.loc=user_lib)
+tryCatch({
+    IRkernel::installspec(user = TRUE)
+    cat('✅ R kernel registered with Jupyter\n')
+}, error = function(e) {
+    cat('⚠️ Kernel registration warning (may be normal):', conditionMessage(e), '\n')
+})
+
+# Test the installation
+if (require('IRkernel', quietly = TRUE)) {
+    cat('🎉 R kernel setup complete!\n')
+} else {
+    cat('⚠️ There may be issues with the R kernel setup\n')
+}
+" 2>/dev/null
+
+# Create/update .Rprofile for consistent R environment
+echo "📝 Creating R profile for consistent library paths..."
+cat > ~/.Rprofile << 'RPROFILE_EOF'
+# Ensure user library is always available
+user_lib <- "~/R"
+if (!dir.exists(user_lib)) {
+    dir.create(user_lib, recursive = TRUE)
+}
+.libPaths(c(user_lib, .libPaths()))
+
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+RPROFILE_EOF
+
+echo "✅ R profile created"
 
 echo "✅ Conda-based setup complete!"
 echo "🎓 Environment ready:"

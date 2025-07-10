@@ -14,7 +14,15 @@ if ! command_exists R; then
     exit 1
 fi
 
-echo "✅ R is installed"
+echo "✅ R is installed ($(R --version | head -1))"
+
+# Check if Jupyter is available
+if ! command_exists jupyter; then
+    echo "❌ Jupyter is not installed. Please run the main setup script first."
+    exit 1
+fi
+
+echo "✅ Jupyter is available"
 
 # Set up R environment
 echo "📦 Setting up R libraries and kernel..."
@@ -81,14 +89,50 @@ echo "🧪 Testing kernel availability..."
 if jupyter kernelspec list | grep -q "ir"; then
     echo "✅ R kernel is available in Jupyter!"
     echo ""
+    echo "🎯 Testing R kernel functionality..."
+    
+    # Quick test to ensure kernel works
+    R -e "
+    if (require('IRkernel', quietly = TRUE)) {
+        cat('✅ IRkernel package is functional\n')
+        cat('✅ R kernel is ready for use\n')
+    } else {
+        cat('⚠️ IRkernel package issues detected\n')
+    }
+    " 2>/dev/null
+    
+    echo ""
     echo "🎯 Next steps:"
     echo "1. Open any .ipynb file in VS Code"
     echo "2. Click the kernel selector (top right)"
     echo "3. Choose 'R' from the dropdown"
     echo "4. Start coding in R!"
     echo ""
-    echo "🚀 You're ready to go!"
+    echo "� If kernel doesn't appear:"
+    echo "   - Refresh VS Code (Ctrl+Shift+P > 'Developer: Reload Window')"
+    echo "   - Wait a moment for VS Code to detect kernels"
+    echo "   - Click the kernel selector and look for 'R'"
+    echo ""
+    echo "�🚀 You're ready to go!"
 else
-    echo "⚠️ R kernel not detected. You may need to restart VS Code."
-    echo "💡 If issues persist, run: python scripts/test_setup.py"
+    echo "⚠️ R kernel not detected. Attempting to register again..."
+    
+    # Try to register kernel again
+    R -e "
+    user_lib <- '~/R'
+    .libPaths(c(user_lib, .libPaths()))
+    if (require('IRkernel', quietly = TRUE)) {
+        IRkernel::installspec(user = TRUE)
+        cat('✅ R kernel re-registered\n')
+    }
+    " 2>/dev/null
+    
+    # Check again
+    if jupyter kernelspec list | grep -q "ir"; then
+        echo "✅ R kernel now available!"
+    else
+        echo "❌ R kernel still not available"
+        echo "💡 Try restarting VS Code or running: jupyter kernelspec list"
+        echo "💡 If issues persist, run: python scripts/test_setup.py"
+    fi
 fi
