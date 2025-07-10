@@ -23,6 +23,9 @@ conda install -c conda-forge -y \
     sqlalchemy \
     plotly \
     bokeh \
+    ipython \
+    lxml \
+    beautifulsoup4 \
     git \
     nodejs \
     gh
@@ -68,6 +71,39 @@ max_connections = 100
 shared_buffers = 128MB
 EOF
 
+# Start PostgreSQL temporarily for initial setup
+echo "🚀 Starting PostgreSQL for initial setup..."
+pg_ctl -D "$PGDATA" start -l "$HOME/postgres.log" -w
+sleep 2
+
+# Create databases and users
+echo "👤 Setting up databases and users..."
+createdb jovyan 2>/dev/null || true
+createdb vscode 2>/dev/null || true  
+createdb student 2>/dev/null || true
+
+# Create student user with no password
+psql -c "CREATE USER student;" 2>/dev/null || true
+psql -c "GRANT ALL PRIVILEGES ON DATABASE student TO student;" 2>/dev/null || true
+psql -c "ALTER USER student CREATEDB;" 2>/dev/null || true
+
+# Load demo databases
+echo "📊 Loading demo databases for students..."
+if [ -f "databases/northwind.sql" ]; then
+    echo "📦 Loading Northwind database..."
+    psql -d student -f databases/northwind.sql > /dev/null 2>&1
+    echo "✅ Northwind database loaded"
+fi
+
+if [ -f "databases/sakila.sql" ]; then
+    echo "📦 Loading Sakila database..."
+    psql -d student -f databases/sakila.sql > /dev/null 2>&1
+    echo "✅ Sakila database loaded"
+fi
+
+# Stop PostgreSQL (it will be started properly by post-start script)
+pg_ctl -D "$PGDATA" stop -w > /dev/null 2>&1
+
 # Set up environment variables for PostgreSQL
 echo "🌍 Setting up environment variables..."
 cat >> ~/.bashrc << 'EOF'
@@ -95,6 +131,10 @@ echo "🛠️ Configuring Git..."
 git config --global init.defaultBranch main
 git config --global user.name "Data Science Student" 2>/dev/null || true
 git config --global user.email "student@example.com" 2>/dev/null || true
+# Disable GPG signing to avoid issues in codespaces/containers
+git config --global commit.gpgsign false
+git config --global tag.gpgsign false
+echo "✅ Git configured without GPG signing for classroom use"
 
 # Set up R kernel for Jupyter
 echo "🔧 Setting up R kernel for Jupyter..."
