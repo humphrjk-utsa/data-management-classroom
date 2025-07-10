@@ -70,9 +70,9 @@ All packages via conda:
 - Additional datasets in `data/` folder
 
 ### Example Notebooks
-- `notebooks/environment-test.ipynb` - Test all functionality
 - `notebooks/getting-started.ipynb` - Introduction examples
 - `notebooks/westroxbury-analysis.ipynb` - Real data analysis
+- `notebooks/r-kernel-diagnostic.ipynb` - R environment and database test
 
 ## 🛠️ For Instructors
 
@@ -90,10 +90,9 @@ PostgreSQL is pre-configured and ready. To add sample data:
 ```
 
 ### Environment Verification
-Run the test scripts to verify everything works:
+Run the test script to verify everything works:
 ```bash
-bash scripts/student_environment_test.sh
-python scripts/student_readiness_test.py
+python scripts/test_setup.py
 ```
 
 ## 🎓 Zero-Touch Philosophy
