@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash.
 # Conda-based post-start script - NO SUDO REQUIRED!
 # This runs every time the codespace is started/resumed
 
