@@ -28,7 +28,7 @@ if ! pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
     pg_ctl -D "$PGDATA" start -l "$HOME/postgres.log" -w
     sleep 2
     
-    # Create databases if they don't exist
+    # Create initial databases if they don't exist
     for db in jovyan vscode student; do
         if ! psql -lqt | cut -d \| -f 1 | grep -qw "$db"; then
             echo "📋 Creating $db database..."
@@ -36,68 +36,64 @@ if ! pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
         fi
     done
     
-    # Create student user if it doesn't exist
-    if ! psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='student'" | grep -q 1; then
-        echo "👤 Creating student user (no password)..."
-        psql -c "CREATE USER student;"
-        psql -c "GRANT ALL PRIVILEGES ON DATABASE student TO student;"
-        psql -c "ALTER USER student CREATEDB;"
-        psql -c "ALTER USER student CREATEROLE;"
-        psql -d student -c "GRANT ALL ON SCHEMA public TO student;"
-    fi
-    
-    # Load demo databases if they don't exist
-    echo "📊 Setting up demo databases..."
-    
-    # Check if Northwind is already loaded (in northwind schema)
-    if ! psql -d student -tAc "SELECT 1 FROM information_schema.tables WHERE table_schema='northwind' AND table_name='customers' LIMIT 1" | grep -q 1; then
-        echo "📦 Loading Northwind database..."
-        if [ -f "databases/northwind.sql" ]; then
-            psql -d student -f databases/northwind.sql > /dev/null 2>&1
-            # Grant permissions to student user on all northwind tables
-            psql -d student -c "GRANT ALL ON ALL TABLES IN SCHEMA northwind TO student;" > /dev/null 2>&1
-            psql -d student -c "GRANT ALL ON ALL SEQUENCES IN SCHEMA northwind TO student;" > /dev/null 2>&1
-            psql -d student -c "GRANT USAGE ON SCHEMA northwind TO student;" > /dev/null 2>&1
-            echo "✅ Northwind database loaded"
-        else
-            echo "⚠️ Northwind SQL file not found"
-        fi
-    else
-        echo "✅ Northwind database already exists"
-    fi
-    
-    # Check if Sakila is already loaded
-    if ! psql -d student -tAc "SELECT 1 FROM information_schema.tables WHERE table_name='actor' LIMIT 1" | grep -q 1; then
-        echo "📦 Loading Sakila database..."
-        if [ -f "databases/sakila.sql" ]; then
-            psql -d student -f databases/sakila.sql > /dev/null 2>&1
-            # Grant permissions to student user on all public tables
-            psql -d student -c "GRANT ALL ON ALL TABLES IN SCHEMA public TO student;" > /dev/null 2>&1
-            psql -d student -c "GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO student;" > /dev/null 2>&1
-            echo "✅ Sakila database loaded"
-        else
-            echo "⚠️ Sakila SQL file not found"
-        fi
-    else
-        echo "✅ Sakila database already exists"
-    fi
-    
-    echo "✅ PostgreSQL started with demo databases ready"
+    echo "✅ PostgreSQL started"
 else
     echo "✅ PostgreSQL already running"
 fi
 
-# Test database connectivity
-if psql -c "SELECT current_user, current_database(), version();" >/dev/null 2>&1; then
-    echo "✅ Database connection working"
-    psql -c "SELECT 
+# Configure student as primary database user (final step)
+echo "� Configuring student user as primary for database operations..."
+if [ -f "/workspaces/data-management-classroom/scripts/setup_student_primary.sh" ]; then
+    # Run our comprehensive student setup script
+    bash /workspaces/data-management-classroom/scripts/setup_student_primary.sh
+    
+    # Source the new environment for this session
+    source ~/.bashrc 2>/dev/null || true
+    
+    # Load all sample databases as the final step
+    echo "� Loading all sample databases..."
+    if [ -f "/workspaces/data-management-classroom/scripts/load_all_sample_databases.sh" ]; then
+        bash /workspaces/data-management-classroom/scripts/load_all_sample_databases.sh
+        echo "✅ All sample databases loaded and ready"
+    else
+        echo "⚠️ Sample database loader not found"
+    fi
+else
+    echo "⚠️ Student primary setup script not found, using fallback..."
+    
+    # Fallback: Basic student user setup
+    if ! psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='student'" | grep -q 1; then
+        echo "� Creating student user..."
+        psql -c "CREATE USER student WITH PASSWORD 'student123' CREATEDB SUPERUSER;"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE student TO student;"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE postgres TO student;"
+    fi
+fi
+
+# Test database connectivity with student user
+echo "🔍 Testing database connection..."
+if psql -U student -h localhost -d postgres -c "SELECT current_user, current_database(), version();" >/dev/null 2>&1; then
+    echo "✅ Student user database connection working"
+    psql -U student -h localhost -d postgres -c "SELECT 
         '🗄️ Connected as: ' || current_user as user_info,
         '📊 Database: ' || current_database() as db_info;" 2>/dev/null
+    
+    # Show available schemas
+    echo "📋 Available database schemas:"
+    psql -U student -h localhost -d postgres -c "SELECT '  • ' || schema_name as schemas FROM information_schema.schemata WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast') ORDER BY schema_name;" -t 2>/dev/null
 else
-    echo "⚠️ Database connection failed"
-    echo "🔧 Check PostgreSQL status with: pg_status"
-    echo "🔧 Start PostgreSQL with: pg_start"
-    echo "🔧 View logs with: tail -f ~/postgres.log"
+    echo "⚠️ Student user database connection failed, trying fallback..."
+    if psql -c "SELECT current_user, current_database(), version();" >/dev/null 2>&1; then
+        echo "✅ Fallback database connection working (jovyan user)"
+        psql -c "SELECT 
+            '🗄️ Connected as: ' || current_user as user_info,
+            '📊 Database: ' || current_database() as db_info;" 2>/dev/null
+    else
+        echo "⚠️ Database connection failed"
+        echo "🔧 Check PostgreSQL status with: pg_status"
+        echo "🔧 Start PostgreSQL with: pg_start"
+        echo "🔧 View logs with: tail -f ~/postgres.log"
+    fi
 fi
 
 # Verify Jupyter configuration
@@ -154,7 +150,10 @@ echo "✅ Git configured for seamless commits and pushes"
 echo ""
 echo "💡 Quick commands:"
 echo "   📊 Start Jupyter Lab: jupyter lab"
-echo "   🗄️ Connect to database: psql"
+echo "   🗄️ Connect to database: psql (connects as student user to postgres db)"
+echo "   🔍 Query Northwind customers: psql -c \"SELECT * FROM northwind.customers LIMIT 5;\""
+echo "   📋 List all schemas: psql -c \"\\dn\""
+echo "   🔄 See all tables: psql -c \"SELECT * FROM shortcuts.all_tables;\""
 echo "   📈 PostgreSQL status: pg_status"
 echo "   🔄 Restart PostgreSQL: pg_restart"
 echo "   📝 Git status: git status"

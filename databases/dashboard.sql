@@ -11,9 +11,12 @@ SELECT
     'Sample' as database_name,
     'public' as schema_name,
     (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'students') as table_count,
-    (SELECT COUNT(*) FROM students) as record_count,
+    (SELECT CASE 
+        WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'students') 
+        THEN (SELECT COUNT(*) FROM public.students) 
+        ELSE 0 
+    END) as record_count,
     'Basic learning database' as description
-WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'students')
 
 UNION ALL
 
