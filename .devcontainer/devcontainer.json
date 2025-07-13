@@ -29,7 +29,6 @@
         "ms-azuretools.vscode-azureresourcegroups",
         "ms-azuretools.vscode-azurestorage",
         "ms-azuretools.vscode-cosmosdb",
-        "ms-vscode.azure-account",
         "mtxr.sqltools",
         "mtxr.sqltools-driver-pg",
         "mtxr.sqltools-driver-sqlite",

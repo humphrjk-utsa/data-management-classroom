@@ -28,6 +28,7 @@ keras>=2.13.0
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.0
 pymongo>=4.5.0
+ipython-sql>=0.5.0
 
 # Web Apps and APIs
 streamlit>=1.25.0
