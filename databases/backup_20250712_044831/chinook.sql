@@ -244,8 +244,8 @@ INSERT INTO playlist_track (playlist_id, track_id) VALUES
     (5, 5);
 
 -- Grant permissions
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA chinook TO student;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA chinook TO student;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA chinook TO vscode;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA chinook TO vscode;
 
 -- Display summary
 SELECT 'Chinook database loaded successfully!' as status;
@@ -260,63 +260,3 @@ UNION ALL
 SELECT 'Employees: ' || COUNT(*) FROM employee
 UNION ALL
 SELECT 'Invoices: ' || COUNT(*) FROM invoice;
-
--- Additional grants for student user (auto-added by fix script)
-DO $$
-DECLARE
-    schema_name text;
-BEGIN
-    -- Grant permissions on all schemas in this database to student
-    FOR schema_name IN 
-        SELECT nspname FROM pg_namespace 
-        WHERE nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
-        AND nspname NOT LIKE 'pg_temp_%'
-        AND nspname NOT LIKE 'pg_toast_temp_%'
-    LOOP
-        EXECUTE format('GRANT ALL PRIVILEGES ON SCHEMA %I TO student', schema_name);
-        EXECUTE format('GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA %I TO student', schema_name);
-        EXECUTE format('GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA %I TO student', schema_name);
-        EXECUTE format('GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA %I TO student', schema_name);
-    END LOOP;
-END
-$$;
-
--- Additional grants for student user (auto-added by fix script)
-DO $$
-DECLARE
-    schema_name text;
-BEGIN
-    -- Grant permissions on all schemas in this database to student
-    FOR schema_name IN 
-        SELECT nspname FROM pg_namespace 
-        WHERE nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
-        AND nspname NOT LIKE 'pg_temp_%'
-        AND nspname NOT LIKE 'pg_toast_temp_%'
-    LOOP
-        EXECUTE format('GRANT ALL PRIVILEGES ON SCHEMA %I TO student', schema_name);
-        EXECUTE format('GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA %I TO student', schema_name);
-        EXECUTE format('GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA %I TO student', schema_name);
-        EXECUTE format('GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA %I TO student', schema_name);
-    END LOOP;
-END
-$$;
-
--- Additional grants for student user (auto-added by fix script)
-DO $$
-DECLARE
-    schema_name text;
-BEGIN
-    -- Grant permissions on all schemas in this database to student
-    FOR schema_name IN 
-        SELECT nspname FROM pg_namespace 
-        WHERE nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
-        AND nspname NOT LIKE 'pg_temp_%'
-        AND nspname NOT LIKE 'pg_toast_temp_%'
-    LOOP
-        EXECUTE format('GRANT ALL PRIVILEGES ON SCHEMA %I TO student', schema_name);
-        EXECUTE format('GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA %I TO student', schema_name);
-        EXECUTE format('GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA %I TO student', schema_name);
-        EXECUTE format('GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA %I TO student', schema_name);
-    END LOOP;
-END
-$$;
